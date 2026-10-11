@@ -113,7 +113,8 @@ class NewOrderNotificationUtil {
 
     if (!fromBackgroundIsolate) {
       try {
-        final hasPermission = await NotificationService().hasNotificationPermission();
+        final hasPermission = await NotificationService()
+            .hasNotificationPermission();
         if (!hasPermission) {
           debugPrint(
             '❌ Notification permission not granted — cannot show tray notification',

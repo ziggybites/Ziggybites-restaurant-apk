@@ -1,4 +1,5 @@
 import 'dart:io';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -321,8 +322,7 @@ class DownloadService {
         // Only fail if we specifically need public Downloads access
         return DownloadResult(
           success: false,
-          error:
-              'Storage permission denied. File will be saved to app Downloads folder instead.',
+          error: 'Storage permission denied. File will be saved to app Downloads folder instead.',
           filePath: null,
         );
       }

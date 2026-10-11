@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -10,6 +11,7 @@ import 'package:webview_master_app/utils/new_order_notification_util.dart';
 import 'package:webview_master_app/utils/notification_payload_util.dart';
 import 'package:webview_master_app/utils/prefs_util.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
+
 import 'dart:io' show Platform;
 import 'dart:convert';
 
@@ -197,7 +199,9 @@ class NotificationService {
           await _handleForegroundMessage(message);
         });
 
-        FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) async {
+        FirebaseMessaging.onMessageOpenedApp.listen((
+          RemoteMessage message,
+        ) async {
           debugPrint('🔔 App opened from notification: ${message.data}');
           final Map<String, dynamic> data = Map<String, dynamic>.from(
             message.data,
@@ -226,8 +230,8 @@ class NotificationService {
       }
 
       if (_firebaseMessaging != null) {
-        RemoteMessage? initialMessage =
-            await _firebaseMessaging!.getInitialMessage();
+        RemoteMessage? initialMessage = await _firebaseMessaging!
+            .getInitialMessage();
         if (initialMessage != null) {
           debugPrint(
             '🔔 App launched from terminated state via FCM: ${initialMessage.data}',

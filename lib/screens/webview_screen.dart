@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -257,7 +258,8 @@ class _WebViewScreenState extends State<WebViewScreen>
         },
       );
 
-      final blobDataScript = '''
+      final blobDataScript =
+          '''
         (function() {
           try {
             var handlerName = '$handlerName';
@@ -712,7 +714,8 @@ class _WebViewScreenState extends State<WebViewScreen>
       final token = PrefsUtil.getAccessToken();
       if (token != null && token.isNotEmpty) {
         debugPrint('🔑 Syncing access token to web localStorage...');
-        final script = """
+        final script =
+            """
           (function() {
             try {
               var token = "${token.replaceAll('"', '\\"').replaceAll('\n', '')}";
@@ -998,9 +1001,9 @@ class _WebViewScreenState extends State<WebViewScreen>
                 if (upiParamsResult != null &&
                     upiParamsResult.toString() != 'null') {
                   try {
-                    final paramsJson =
-                        jsonDecode(upiParamsResult.toString())
-                            as Map<String, dynamic>;
+                    final paramsJson = jsonDecode(
+                      upiParamsResult.toString(),
+                    ) as Map<String, dynamic>;
                     if (paramsJson.isNotEmpty) {
                       final upiUri = Uri(
                         scheme: 'upi',
@@ -1201,11 +1204,12 @@ class _WebViewScreenState extends State<WebViewScreen>
                 '')
             .toString();
 
-    final safeJson = jsonEncode(
-      data,
-    ).replaceAll(r'\', r'\\').replaceAll("'", r"\'");
+    final safeJson = jsonEncode(data)
+        .replaceAll(r'\', r'\\')
+        .replaceAll("'", r"\'");
 
-    final script = """
+    final script =
+        """
 (function() {
   try {
     var orderData = JSON.parse('$safeJson');
@@ -1299,7 +1303,8 @@ class _WebViewScreenState extends State<WebViewScreen>
 
                         // ── Lightweight Non-Breaking Helpers ─────────────────
                         UserScript(
-                          source: """
+                          source:
+                              """
 (function() {
   // 1. Force isSecureContext to true if required by modern Web SDKs
   try {
@@ -1489,78 +1494,82 @@ class _WebViewScreenState extends State<WebViewScreen>
                         controller.loadUrl(urlRequest: urlRequest);
                         return true;
                       },
-                      shouldOverrideUrlLoading: (controller, navigationAction) async {
-                        final urlRequest = navigationAction.request;
-                        final uri = urlRequest.url;
+                      shouldOverrideUrlLoading:
+                          (controller, navigationAction) async {
+                            final urlRequest = navigationAction.request;
+                            final uri = urlRequest.url;
 
-                        if (uri == null) return NavigationActionPolicy.ALLOW;
+                            if (uri == null)
+                              return NavigationActionPolicy.ALLOW;
 
-                        debugPrint('➡️ Navigating: $uri');
+                            debugPrint('➡️ Navigating: $uri');
 
-                        // 1. If it's the main website domain (ziggybites.com), ALWAYS allow navigation inside WebView
-                        final host = uri.host.toLowerCase();
-                        if (host.contains('ziggybites.com')) {
-                          return NavigationActionPolicy.ALLOW;
-                        }
+                            // 1. If it's the main website domain (ziggybites.com), ALWAYS allow navigation inside WebView
+                            final host = uri.host.toLowerCase();
+                            if (host.contains('ziggybites.com')) {
+                              return NavigationActionPolicy.ALLOW;
+                            }
 
-                        // 2. Check for Intent Scheme (Android)
-                        if (uri.scheme.toLowerCase() == 'intent') {
-                          await _handleIntentUrl(uri);
-                          return NavigationActionPolicy.CANCEL;
-                        }
+                            // 2. Check for Intent Scheme (Android)
+                            if (uri.scheme.toLowerCase() == 'intent') {
+                              await _handleIntentUrl(uri);
+                              return NavigationActionPolicy.CANCEL;
+                            }
 
-                        // 3. Check for Phone/Tel Scheme
-                        if (uri.scheme.toLowerCase() == 'tel') {
-                          try {
-                            await launchUrl(
+                            // 3. Check for Phone/Tel Scheme
+                            if (uri.scheme.toLowerCase() == 'tel') {
+                              try {
+                                await launchUrl(
+                                  uri,
+                                  mode: LaunchMode.externalApplication,
+                                );
+                                return NavigationActionPolicy.CANCEL;
+                              } catch (e) {
+                                debugPrint('❌ Failed to launch intent: $e');
+                              }
+                            }
+
+                            // 4. Check for UPI deep links
+                            if (uri.scheme.toLowerCase() == 'upi') {
+                              debugPrint('💳 Detected UPI URL: $uri');
+                              await _launchExternalUrl(uri);
+                              return NavigationActionPolicy.CANCEL;
+                            }
+
+                            // 5. Check for Razorpay UPI SVG
+                            final upiAppUri = await _handleRazorpayUPIAppClick(
                               uri,
-                              mode: LaunchMode.externalApplication,
                             );
-                            return NavigationActionPolicy.CANCEL;
-                          } catch (e) {
-                            debugPrint('❌ Failed to launch intent: $e');
-                          }
-                        }
+                            if (upiAppUri != null) {
+                              await _launchExternalUrl(upiAppUri);
+                              return NavigationActionPolicy.CANCEL;
+                            }
 
-                        // 4. Check for UPI deep links
-                        if (uri.scheme.toLowerCase() == 'upi') {
-                          debugPrint('💳 Detected UPI URL: $uri');
-                          await _launchExternalUrl(uri);
-                          return NavigationActionPolicy.CANCEL;
-                        }
+                            // 6. Handle other non-HTTP schemes
+                            final allowedSchemes = [
+                              'http',
+                              'https',
+                              'file',
+                              'chrome',
+                              'data',
+                              'javascript',
+                              'about',
+                            ];
+                            if (!allowedSchemes.contains(
+                              uri.scheme.toLowerCase(),
+                            )) {
+                              await _launchExternalUrl(uri);
+                              return NavigationActionPolicy.CANCEL;
+                            }
 
-                        // 5. Check for Razorpay UPI SVG
-                        final upiAppUri = await _handleRazorpayUPIAppClick(uri);
-                        if (upiAppUri != null) {
-                          await _launchExternalUrl(upiAppUri);
-                          return NavigationActionPolicy.CANCEL;
-                        }
+                            // 7. External launch check
+                            if (_shouldLaunchExternally(uri)) {
+                              await _launchExternalUrl(uri);
+                              return NavigationActionPolicy.CANCEL;
+                            }
 
-                        // 6. Handle other non-HTTP schemes
-                        final allowedSchemes = [
-                          'http',
-                          'https',
-                          'file',
-                          'chrome',
-                          'data',
-                          'javascript',
-                          'about',
-                        ];
-                        if (!allowedSchemes.contains(
-                          uri.scheme.toLowerCase(),
-                        )) {
-                          await _launchExternalUrl(uri);
-                          return NavigationActionPolicy.CANCEL;
-                        }
-
-                        // 7. External launch check
-                        if (_shouldLaunchExternally(uri)) {
-                          await _launchExternalUrl(uri);
-                          return NavigationActionPolicy.CANCEL;
-                        }
-
-                        return NavigationActionPolicy.ALLOW;
-                      },
+                            return NavigationActionPolicy.ALLOW;
+                          },
                       onWebViewCreated: (controller) async {
                         _webViewController = controller;
                         debugPrint('✅ WebView created');
@@ -1812,8 +1821,7 @@ class _WebViewScreenState extends State<WebViewScreen>
                           '❌ onReceivedHttpError: ${errorResponse.statusCode} ${errorResponse.reasonPhrase} url: ${request.url}',
                         );
                       },
-                      onReceivedServerTrustAuthRequest:
-                          (controller, challenge) async {
+                      onReceivedServerTrustAuthRequest: (controller, challenge) async {
                         debugPrint(
                           '⚠️ SSL Challenge: ${challenge.protectionSpace.host}',
                         );
@@ -2153,9 +2161,9 @@ class _WebViewScreenState extends State<WebViewScreen>
                               CircularProgressIndicator(
                                 value:
                                     _loadingProgress < 1.0 &&
-                                            _loadingProgress > 0
-                                        ? _loadingProgress
-                                        : null,
+                                        _loadingProgress > 0
+                                    ? _loadingProgress
+                                    : null,
                                 valueColor: const AlwaysStoppedAnimation<Color>(
                                   AppConfig.primaryColor,
                                 ),

@@ -118,20 +118,17 @@ class AppConfig {
   static const List<OnboardingPage> onboardingPages = [
     OnboardingPage(
       title: 'Welcome to WebView Master',
-      description:
-          'Experience seamless web browsing with our advanced WebView application.',
+      description: 'Experience seamless web browsing with our advanced WebView application.',
       imagePath: 'assets/onboarding/onboarding1.png',
     ),
     OnboardingPage(
       title: 'Feature Rich',
-      description:
-          'Enjoy camera, location, microphone access and many more powerful features.',
+      description: 'Enjoy camera, location, microphone access and many more powerful features.',
       imagePath: 'assets/onboarding/onboarding2.png',
     ),
     OnboardingPage(
       title: 'Fast & Secure',
-      description:
-          'Lightning-fast performance with top-notch security for your browsing needs.',
+      description: 'Lightning-fast performance with top-notch security for your browsing needs.',
       imagePath: 'assets/onboarding/onboarding3.png',
     ),
   ];
